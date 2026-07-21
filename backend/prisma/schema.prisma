@@ -1,0 +1,282 @@
+// Sistema de Protocolo — Prefeitura Municipal de Laranjal do Jari/AP
+// Padrão obrigatório em todas as tabelas:
+//   id CUID · createdAt · updatedAt · deletedAt (soft delete) · auditoria via AuditLog
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────── ENUMS ───────────────────────────
+
+enum Role {
+  ADMIN      // administra o sistema, usuários e setores
+  GESTOR     // gerencia protocolos do seu setor
+  ATENDENTE  // abre protocolos no balcão
+  SERVIDOR   // tramita e despacha protocolos
+}
+
+enum ProtocolStatus {
+  ABERTO
+  EM_ANDAMENTO
+  PENDENTE
+  CONCLUIDO
+  ARQUIVADO
+  CANCELADO
+}
+
+enum Priority {
+  BAIXA
+  NORMAL
+  ALTA
+  URGENTE
+}
+
+enum MovementType {
+  ABERTURA
+  ENCAMINHAMENTO
+  DESPACHO
+  PENDENCIA
+  CONCLUSAO
+  ARQUIVAMENTO
+  CANCELAMENTO
+  REABERTURA
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  DOWNLOAD
+}
+
+// ─────────────────────────── MODELS ───────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  cpf          String?   @unique
+  passwordHash String
+  role         Role      @default(SERVIDOR)
+  active       Boolean   @default(true)
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  refreshTokens RefreshToken[]
+  protocols     Protocol[]         @relation("CreatedProtocols")
+  movementsFrom ProtocolMovement[] @relation("MovementsSent")
+  movementsTo   ProtocolMovement[] @relation("MovementsReceived")
+  attachments   Attachment[]
+  auditLogs     AuditLog[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([email])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ip        String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Department {
+  id      String  @id @default(cuid())
+  name    String  @unique
+  acronym String  @unique // ex.: SEMAD, SEMED, SEMUS, GABIN
+  active  Boolean @default(true)
+
+  users         User[]
+  protocols     Protocol[]         @relation("CurrentDepartment")
+  movementsFrom ProtocolMovement[] @relation("DeptFrom")
+  movementsTo   ProtocolMovement[] @relation("DeptTo")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([deletedAt])
+  @@map("departments")
+}
+
+model Subject {
+  id        String     @id @default(cuid())
+  name      String     @unique // ex.: Requerimento de Alvará, IPTU, Licença...
+  active    Boolean    @default(true)
+  protocols Protocol[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("subjects")
+}
+
+// Requerente (cidadão ou pessoa jurídica)
+model Applicant {
+  id        String     @id @default(cuid())
+  name      String
+  document  String     @unique // CPF ou CNPJ (somente dígitos)
+  email     String?
+  phone     String?
+  address   String?
+  protocols Protocol[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([document])
+  @@map("applicants")
+}
+
+model Protocol {
+  id          String         @id @default(cuid())
+  number      String         @unique // 000042/2026
+  year        Int
+  sequence    Int
+  status      ProtocolStatus @default(ABERTO)
+  priority    Priority       @default(NORMAL)
+  description String
+  accessKey   String         @unique @default(cuid()) // consulta pública
+
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  applicantId String
+  applicant   Applicant @relation(fields: [applicantId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("CreatedProtocols", fields: [createdById], references: [id])
+
+  currentDepartmentId String
+  currentDepartment   Department @relation("CurrentDepartment", fields: [currentDepartmentId], references: [id])
+
+  dueDate     DateTime?
+  concludedAt DateTime?
+
+  movements   ProtocolMovement[]
+  attachments Attachment[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([year, sequence])
+  @@index([status])
+  @@index([currentDepartmentId])
+  @@index([deletedAt])
+  @@map("protocols")
+}
+
+model ProtocolMovement {
+  id   String       @id @default(cuid())
+  type MovementType
+  note String? // despacho / observação
+
+  protocolId String
+  protocol   Protocol @relation(fields: [protocolId], references: [id])
+
+  fromDepartmentId String?
+  fromDepartment   Department? @relation("DeptFrom", fields: [fromDepartmentId], references: [id])
+
+  toDepartmentId String?
+  toDepartment   Department? @relation("DeptTo", fields: [toDepartmentId], references: [id])
+
+  sentById String
+  sentBy   User   @relation("MovementsSent", fields: [sentById], references: [id])
+
+  receivedById String?
+  receivedBy   User?     @relation("MovementsReceived", fields: [receivedById], references: [id])
+  receivedAt   DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([protocolId])
+  @@map("protocol_movements")
+}
+
+model Attachment {
+  id           String @id @default(cuid())
+  originalName String
+  storedName   String @unique
+  mimeType     String
+  sizeBytes    Int
+  path         String
+
+  protocolId String
+  protocol   Protocol @relation(fields: [protocolId], references: [id])
+
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([protocolId])
+  @@map("attachments")
+}
+
+// Auditoria completa: quem, o quê, quando, antes/depois, origem
+model AuditLog {
+  id       String      @id @default(cuid())
+  action   AuditAction
+  entity   String // nome da tabela/entidade
+  entityId String?
+  before   Json?
+  after    Json?
+  ip       String?
+  userAgent String?
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// Controle transacional da numeração sequencial anual
+model ProtocolCounter {
+  id    String @id @default(cuid())
+  year  Int    @unique
+  value Int    @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("protocol_counters")
+}

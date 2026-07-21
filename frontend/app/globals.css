@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+
+body { @apply bg-jari-50 text-jari-950 antialiased; }
+
+/* Assinatura visual: o número de protocolo como carimbo */
+.carimbo {
+  @apply inline-flex items-center gap-1.5 rounded border-2 border-jari-800 bg-white px-2.5 py-0.5
+         font-mono text-sm font-semibold tabular-nums tracking-wide text-jari-900;
+}
+
+::selection { @apply bg-rio-500/30; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

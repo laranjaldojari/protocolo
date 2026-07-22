@@ -6,8 +6,8 @@ Ao final você terá:
 
 | Serviço | Endereço (exemplo) |
 |---|---|
-| Frontend (Next.js) | `https://protocolo.laranjaldojari.ap.gov.br` |
-| API (NestJS) + Swagger | `https://api-protocolo.laranjaldojari.ap.gov.br` |
+| Frontend (Next.js) | `https://protocolo.laranjaldojari.cloud` |
+| API (NestJS) + Swagger | `https://api-protocolo.laranjaldojari.cloud` |
 | PostgreSQL 16 | interno (rede Docker) |
 | Redis 7 | interno (rede Docker) |
 
@@ -77,7 +77,7 @@ curl -sSL https://dokploy.com/install.sh | sh
 
 Ao terminar, acesse `http://IP_DO_SERVIDOR:3000`, crie o **usuário administrador** e faça login.
 
-> Recomendado: em **Settings → Server**, defina um domínio para o próprio painel (ex.: `deploy.laranjaldojari.ap.gov.br`) e ative HTTPS. Depois disso você pode fechar a porta 3000 no firewall.
+> Recomendado: em **Settings → Server**, defina um domínio para o próprio painel (ex.: `deploy.laranjaldojari.cloud`) e ative HTTPS. Depois disso você pode fechar a porta 3000 no firewall.
 
 ---
 
@@ -135,7 +135,7 @@ JWT_ACCESS_SECRET=GERE_UM_SEGREDO_LONGO_ALEATORIO
 JWT_REFRESH_SECRET=GERE_OUTRO_SEGREDO_DIFERENTE
 JWT_ACCESS_TTL=15m
 JWT_REFRESH_TTL=7d
-FRONTEND_URL=https://protocolo.laranjaldojari.ap.gov.br
+FRONTEND_URL=https://protocolo.laranjaldojari.cloud
 UPLOAD_DIR=/app/uploads
 ```
 
@@ -145,7 +145,7 @@ UPLOAD_DIR=/app/uploads
    - Volume Name: `protocolo-uploads`
    - Mount Path: `/app/uploads`
 5. Aba **Domains** → **Add Domain**:
-   - Host: `api-protocolo.laranjaldojari.ap.gov.br`
+   - Host: `api-protocolo.laranjaldojari.cloud`
    - **Container Port: `3001`**
    - HTTPS: ativado · Certificate: **Let's Encrypt**
 6. No seu provedor de DNS, crie um registro **A** apontando `api-protocolo` → IP do VPS.
@@ -176,16 +176,16 @@ Teste: `https://api-protocolo.seudominio/docs` deve abrir o Swagger.
 3. **Importante:** as variáveis `NEXT_PUBLIC_*` entram no bundle **durante o build**. Configure-as como **Build Args** (aba Advanced → Build Args, ou no campo de build da aba General, conforme a versão do Dokploy):
 
 ```env
-NEXT_PUBLIC_API_URL=https://api-protocolo.laranjaldojari.ap.gov.br/api/v1
-NEXT_PUBLIC_WS_URL=https://api-protocolo.laranjaldojari.ap.gov.br
+NEXT_PUBLIC_API_URL=https://api-protocolo.laranjaldojari.cloud/api/v1
+NEXT_PUBLIC_WS_URL=https://api-protocolo.laranjaldojari.cloud
 ```
 
    Repita as duas também na aba **Environment** (não faz mal e cobre versões do painel que injetam env no build).
-4. Aba **Domains** → Host: `protocolo.laranjaldojari.ap.gov.br` · **Container Port: `3000`** · HTTPS + Let's Encrypt.
+4. Aba **Domains** → Host: `protocolo.laranjaldojari.cloud` · **Container Port: `3000`** · HTTPS + Let's Encrypt.
 5. Crie o registro **A** no DNS: `protocolo` → IP do VPS.
 6. **Deploy**.
 
-Acesse o domínio: a consulta pública deve carregar. Entre em `/login` com `admin@laranjaldojari.ap.gov.br` / `Admin@123` e **troque a senha imediatamente**.
+Acesse o domínio: a consulta pública deve carregar. Entre em `/login` com `admin@laranjaldojari.cloud` / `Admin@123` e **troque a senha imediatamente**.
 
 ---
 

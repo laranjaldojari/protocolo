@@ -35,8 +35,8 @@ npm run dev              # http://localhost:3000
 
 | Perfil | E-mail | Senha |
 |---|---|---|
-| Administrador | admin@laranjaldojari.ap.gov.br | Admin@123 |
-| Atendente | atendente@laranjaldojari.ap.gov.br | Atende@123 |
+| Administrador | admin@laranjaldojari.cloud | Admin@123 |
+| Atendente | atendente@laranjaldojari.cloud | Atende@123 |
 
 ## Funcionalidades
 

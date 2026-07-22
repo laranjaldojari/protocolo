@@ -42,11 +42,11 @@ async function main() {
   const semad = await prisma.department.findUniqueOrThrow({ where: { acronym: 'SEMAD' } });
 
   await prisma.user.upsert({
-    where: { email: 'admin@laranjaldojari.ap.gov.br' },
+    where: { email: 'admin@laranjaldojari.cloud' },
     update: {},
     create: {
       name: 'Administrador do Sistema',
-      email: 'admin@laranjaldojari.ap.gov.br',
+      email: 'admin@laranjaldojari.cloud',
       passwordHash: await argon2.hash('Admin@123'),
       role: Role.ADMIN,
       departmentId: semad.id,
@@ -54,11 +54,11 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: 'atendente@laranjaldojari.ap.gov.br' },
+    where: { email: 'atendente@laranjaldojari.cloud' },
     update: {},
     create: {
       name: 'Atendente do Protocolo Geral',
-      email: 'atendente@laranjaldojari.ap.gov.br',
+      email: 'atendente@laranjaldojari.cloud',
       passwordHash: await argon2.hash('Atende@123'),
       role: Role.ATENDENTE,
       departmentId: protg.id,
